@@ -208,6 +208,26 @@ export default function ChatPanel() {
     return () => { delete (window as any).__handleBuildQuote; };
   }, [handleBuildQuote]);
 
+  // Expose handleUserMessage globally so GuidePanel can send arbitrary messages back to AI
+  const handleUserMessage = useCallback(async (text: string) => {
+    const userMsg = { role: 'user', content: text };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+
+    dispatch({ type: 'SET_PHASE', phase: 'validating' });
+    dispatch({ type: 'SET_THINKING', thinking: true });
+
+    await sendToAI(newMessages);
+
+    dispatch({ type: 'SET_THINKING', thinking: false });
+  }, [messages, sendToAI, dispatch]);
+
+  useEffect(() => {
+    (window as any).__handleUserMessage = handleUserMessage;
+    return () => { delete (window as any).__handleUserMessage; };
+  }, [handleUserMessage]);
+
+
   const onSubmit = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!prompt.trim()) return;
