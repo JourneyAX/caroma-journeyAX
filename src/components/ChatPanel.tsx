@@ -6,6 +6,13 @@ import MessageBubble from './MessageBubble';
 
 export default function ChatPanel() {
   const { state, dispatch } = useJourney();
+  const stateRef = useRef(state);
+  
+  // Keep ref in sync with latest state
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
+
   const [messages, setMessages] = useState<any[]>([]);
   const [prompt, setPrompt] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -121,14 +128,15 @@ export default function ChatPanel() {
       
       // Safety: if we're stuck on 'validating' and the AI didn't transition us
       if (!hasPhaseChange) {
+        const latestState = stateRef.current;
         // Fallback to the most relevant phase based on what we have in state
-        if (state.customBom && state.customBom.length > 0) {
+        if (latestState.customBom && latestState.customBom.length > 0) {
           dispatch({ type: 'SET_PHASE', phase: 'quote' });
-        } else if (state.guideSteps && state.guideSteps.length > 0) {
+        } else if (latestState.guideSteps && latestState.guideSteps.length > 0) {
           dispatch({ type: 'SET_PHASE', phase: 'guide' });
-        } else if (state.recommendedProducts && state.recommendedProducts.length > 0) {
+        } else if (latestState.recommendedProducts && latestState.recommendedProducts.length > 0) {
           dispatch({ type: 'SET_PHASE', phase: 'products' });
-        } else if (state.dynamicQuestions && state.dynamicQuestions.length > 0) {
+        } else if (latestState.dynamicQuestions && latestState.dynamicQuestions.length > 0) {
           dispatch({ type: 'SET_PHASE', phase: 'clarify' });
         } else {
           dispatch({ type: 'SET_PHASE', phase: 'intro' });
