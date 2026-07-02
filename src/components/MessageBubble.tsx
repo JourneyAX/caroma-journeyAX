@@ -1,0 +1,101 @@
+'use client';
+
+import React from 'react';
+
+import { JourneyMessage } from '@/lib/types';
+
+interface Props {
+  message: JourneyMessage;
+}
+
+// Simple markdown parser for chat messages — handles **bold**, *italic*, and line breaks
+function renderMarkdown(text: string) {
+  // Split into paragraphs by double newlines
+  const paragraphs = text.split(/\n\n+/);
+  
+  return paragraphs.map((para, pIdx) => {
+    // Handle single line breaks within a paragraph
+    const lines = para.split('\n');
+    
+    return (
+      <p key={pIdx} style={{ margin: pIdx > 0 ? '10px 0 0' : 0 }}>
+        {lines.map((line, lIdx) => (
+          <span key={lIdx}>
+            {lIdx > 0 && <br />}
+            {parseBold(line)}
+          </span>
+        ))}
+      </p>
+    );
+  });
+}
+
+// Parse **bold** and *italic* markers
+function parseBold(text: string) {
+  const parts: (string | React.ReactNode)[] = [];
+  const regex = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    // Add text before the match
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    // Bold
+    if (match[1]) {
+      parts.push(<strong key={match.index}>{match[1]}</strong>);
+    }
+    // Italic
+    else if (match[2]) {
+      parts.push(<em key={match.index}>{match[2]}</em>);
+    }
+    lastIndex = match.index + match[0].length;
+  }
+
+  // Add remaining text
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+
+  return parts.length > 0 ? parts : [text];
+}
+
+export default function MessageBubble({ message }: Props) {
+  if (message.role === 'user') {
+    return (
+      <div className="msg msg--user">
+        <div className="msg__bubble--user">{message.text}</div>
+      </div>
+    );
+  }
+
+  if (message.role === 'note') {
+    return (
+      <div className="msg msg--note">
+        <div className="msg__note">
+          <svg className="msg__note-icon" width="15" height="15" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3l2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5z" stroke="#A67C4E" strokeWidth="1.6" strokeLinejoin="round" />
+          </svg>
+          <div className="msg__note-content">
+            {message.head && <b className="msg__note-head">{message.head} </b>}
+            {message.text}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // AI message — render with markdown support
+  return (
+    <div className="msg msg--ai">
+      <div className="msg__header">
+        <div className="msg__avatar">
+          <span className="msg__avatar-dot" />
+        </div>
+        <span className="msg__label">Consultant</span>
+      </div>
+      <div className="msg__bubble--ai">{renderMarkdown(message.text)}</div>
+    </div>
+  );
+}
