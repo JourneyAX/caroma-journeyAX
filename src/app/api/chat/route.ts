@@ -241,7 +241,7 @@ export async function POST(req: Request) {
     while (loops < maxLoops) {
     loops++;
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5.4-mini',
       messages: conversation,
       tools,
       tool_choice: 'auto'
