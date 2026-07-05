@@ -413,6 +413,7 @@ ${state.recommendedProducts && state.recommendedProducts.length > 0
     // Return both the final message text AND any UI tool calls
     return new Response(JSON.stringify({
       message: finalMessage,
+      conversation: conversation.filter(m => m.role !== 'system'), // Exclude system messages to keep it clean and save bandwidth
       uiActions: uiToolCalls.map(call => ({
         name: call.function.name,
         arguments: JSON.parse(call.function.arguments)

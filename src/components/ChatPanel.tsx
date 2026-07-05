@@ -62,11 +62,15 @@ export default function ChatPanel() {
       
       const data = await res.json();
 
-      // Add the AI's text response to messages
-      const aiText = data.message?.content || '';
-      if (aiText) {
-        const updatedMessages = [...newMessages, { role: 'assistant', content: aiText }];
-        setMessages(updatedMessages);
+      // Update messages to the full conversation history from the backend (including tool calls/responses)
+      if (data.conversation && data.conversation.length > 0) {
+        setMessages(data.conversation);
+      } else {
+        const aiText = data.message?.content || '';
+        if (aiText) {
+          const updatedMessages = [...newMessages, { role: 'assistant', content: aiText }];
+          setMessages(updatedMessages);
+        }
       }
 
       let hasPhaseChange = false;
