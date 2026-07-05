@@ -355,3 +355,85 @@ export async function searchTenantProducts(
   return await col.aggregate(pipeline).toArray();
 }
 ```
+
+---
+
+## 4. Mandatory Repository-Level Tenant Isolation
+
+To enforce perfect security boundary conditions (SOC2 compliance) and prevent cross-tenant data leaks due to developer coding errors, we introduce the **BaseRepository** pattern into `@journeyax/database`.
+
+Every single repository class (e.g. `QuoteRepository`, `UserRepository`) extends a base class that programmatically intercept calls, validates the presence of `tenantId`, and wraps queries in the active tenant's context.
+
+### Conceptual BaseRepository Implementation
+```typescript
+// packages/database/src/base.repository.ts
+import { Collection, Document, Filter, OptionalUnlessRequiredId } from 'mongodb';
+import { getDb } from './index';
+
+export abstract class BaseRepository<T extends Document> {
+  constructor(protected readonly collectionName: string) {}
+
+  protected async getCollection(): Promise<Collection<T>> {
+    const db = getDb();
+    return db.collection<T>(this.collectionName);
+  }
+
+  /**
+   * Enforce tenantId validation at database entry point
+   */
+  private validateTenant(tenantId: string) {
+    if (!tenantId) {
+      throw new Error(`TENANT_ENFORCEMENT_ERROR: tenantId must be provided for database operations in '${this.collectionName}'`);
+    }
+  }
+
+  async create(tenantId: string, doc: OptionalUnlessRequiredId<T>): Promise<T> {
+    this.validateTenant(tenantId);
+    const col = await this.getCollection();
+    
+    // Auto-inject tenantId to document to prevent developer bypasses
+    const documentToSave = { ...doc, tenantId } as OptionalUnlessRequiredId<T>;
+    const result = await col.insertOne(documentToSave);
+    
+    return { ...documentToSave, _id: result.insertedId } as unknown as T;
+  }
+
+  async find(tenantId: string, filter: Filter<T> = {}): Promise<T[]> {
+    this.validateTenant(tenantId);
+    const col = await this.getCollection();
+    
+    // Dynamic query injection of tenantId filter
+    const tenantFilter = { ...filter, tenantId } as Filter<T>;
+    return col.find(tenantFilter).toArray();
+  }
+
+  async findOne(tenantId: string, filter: Filter<T>): Promise<T | null> {
+    this.validateTenant(tenantId);
+    const col = await this.getCollection();
+    
+    const tenantFilter = { ...filter, tenantId } as Filter<T>;
+    return col.findOne(tenantFilter);
+  }
+
+  async updateOne(tenantId: string, filter: Filter<T>, update: Partial<T>): Promise<boolean> {
+    this.validateTenant(tenantId);
+    const col = await this.getCollection();
+    
+    const tenantFilter = { ...filter, tenantId } as Filter<T>;
+    const result = await col.updateOne(tenantFilter, { $set: update });
+    return result.modifiedCount > 0;
+  }
+
+  async deleteMany(tenantId: string, filter: Filter<T>): Promise<number> {
+    this.validateTenant(tenantId);
+    const col = await this.getCollection();
+    
+    const tenantFilter = { ...filter, tenantId } as Filter<T>;
+    const result = await col.deleteMany(tenantFilter);
+    return result.deletedCount;
+  }
+}
+```
+
+By making it impossible to query a repository without specifying `tenantId` in the first argument, we establish a **strict cryptographic/logical boundary** for all B2B clients using the unified database.
+
