@@ -14,7 +14,7 @@ This skill contains the development guidelines, coding conventions, configuratio
 When creating new modules or services, adhere to the **Turborepo** workspaces model:
 
 * **Apps (`apps/`)**:
-  - `configurator-web/`: Contains Next.js chat configurator UI code.
+  - `journeyax-web/`: Contains Next.js chat configurator UI code.
   - `backoffice-admin/`: Contains brand console administration screens.
 * **Packages (`packages/`)**:
   - Keep business calculations in `packages/configurator-core/`.
@@ -104,14 +104,14 @@ For hosting the multi-tenant SaaS application, all monorepo components are conta
 We utilize multi-stage builds to optimize image sizes for Kubernetes / ECS deployments:
 
 ```dockerfile
-# apps/configurator-web/Dockerfile
+# apps/journeyax-web/Dockerfile
 FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY apps/configurator-web/package.json ./apps/configurator-web/
+COPY apps/journeyax-web/package.json ./apps/journeyax-web/
 RUN corepack enable && pnpm install --frozen-lockfile
 
 # Rebuild the source code only when needed
@@ -119,7 +119,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN corepack enable && pnpm --filter configurator-web build
+RUN corepack enable && pnpm --filter journeyax-web build
 
 # Production image, copy all the files and run next
 FROM base AS runner
@@ -128,16 +128,16 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/apps/configurator-web/public ./apps/configurator-web/public
-COPY --from=builder --chown=nextjs:nodejs /app/apps/configurator-web/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/apps/configurator-web/.next/static ./apps/configurator-web/.next/static
+COPY --from=builder /app/apps/journeyax-web/public ./apps/journeyax-web/public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/journeyax-web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/journeyax-web/.next/static ./apps/journeyax-web/.next/static
 
 USER nextjs
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "apps/configurator-web/server.js"]
+CMD ["node", "apps/journeyax-web/server.js"]
 ```
 
 ### Docker Compose Local Orchestration
@@ -160,12 +160,12 @@ services:
       - "80:8000"
       - "443:8443"
     depends_on:
-      - configurator-web
+      - journeyax-web
 
-  configurator-web:
+  journeyax-web:
     build:
       context: .
-      dockerfile: apps/configurator-web/Dockerfile
+      dockerfile: apps/journeyax-web/Dockerfile
     environment:
       MONGODB_URI: "mongodb+srv://..."
       OPENAI_API_KEY: "sk-..."

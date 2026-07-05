@@ -11,7 +11,7 @@ To manage the frontend apps, administration consoles, and shared B2B modules, we
 ```text
 journeyax-monorepo/
 ├── apps/
-│   ├── configurator-web/       # Next.js multi-tenant buyer configurator (the core chat UI)
+│   ├── journeyax-web/          # Next.js multi-tenant buyer configurator (the core chat UI)
 │   └── backoffice-admin/       # React/Next.js administrator console for managing catalog & manual uploads
 ├── packages/
 │   ├── shared-types/           # Shared TS interfaces (Products, BOMs, Quotes, Tenants)
@@ -43,7 +43,7 @@ _transform: true
 
 services:
   - name: configurator-service
-    url: http://configurator-web:3000
+    url: http://journeyax-web:3000
     routes:
       - name: tenant-configurator-routes
         hosts:
