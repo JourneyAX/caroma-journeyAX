@@ -4,6 +4,31 @@ import { search } from '@/services/knowledge/mongo';
 
 const openai = new OpenAI();
 
+function parseSpecs(content: string): Record<string, string> {
+  const specs: Record<string, string> = {};
+  const specsIdx = content.indexOf('Specifications');
+  if (specsIdx === -1) return specs;
+  
+  const techDownloadsIdx = content.indexOf('Technical Downloads', specsIdx);
+  const specsText = techDownloadsIdx !== -1 
+    ? content.substring(specsIdx, techDownloadsIdx) 
+    : content.substring(specsIdx);
+    
+  const lines = specsText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+  for (let i = 1; i < lines.length - 1; i += 2) {
+    const key = lines[i];
+    const val = lines[i+1];
+    if (key === 'Product Codes' || /^\d+[A-Z\d]*$/.test(key) || /^\d+[A-Z\d]*$/.test(val)) {
+      continue;
+    }
+    if (key.length < 40 && !key.includes('[') && !key.includes('http') && val.length < 100) {
+      specs[key] = val;
+    }
+  }
+  return specs;
+}
+
+
 const SYSTEM_PROMPT = `You are a multi-persona Caroma expert. You act seamlessly as a Customer Support Agent (CSA), Plumber, Store Stylist, and Sales Consultant. A customer is talking to you. Your job is to guide them through a COMPLETE end-to-end journey.
 
 ## Your Conversational Style
@@ -46,7 +71,7 @@ const SYSTEM_PROMPT = `You are a multi-persona Caroma expert. You act seamlessly
 ## CRITICAL RULES
 1. **NO HALLUCINATIONS FOR PRODUCTS:** Every product, price, and spec must come from \`searchKnowledge\`.
 2. **GENERIC TROUBLESHOOTING ALLOWED:** If you cannot find a specific troubleshooting guide in the knowledge base, you MAY use your general plumbing knowledge to generate generic troubleshooting or installation steps. ALWAYS call \`showGuide\` to display them. 
-3. **USE IMAGES:** If you have an imageUrl from the knowledge base, provide it in the tools.
+3. **USE IMAGES AND SPECS:** When calling the \`showProducts\` tool, you MUST pass the \`imageUrl\` and the full \`specs\` object returned directly from the \`searchKnowledge\` tool. Do NOT omit them or leave them empty, as they are required to render the product cards visually.
 4. **DO NOT SKIP STEPS:** You must do Phase 3 (Installation Guidance) BEFORE generating the quote.
 5. **ALWAYS call \`searchKnowledge\`** before answering a technical, design, or product question.
 6. **ROOM SCOPE ENFORCEMENT:** If the user is configuring a Kitchen or Laundry room, you MUST recommend only kitchen/laundry products (e.g., sink mixers, kitchen sinks, laundry tubs, cabinet tubs). Do NOT recommend bathroom-specific products like basin mixers, bath/shower mixers, toilets, basins, baths, or showers.
@@ -282,23 +307,30 @@ export async function POST(req: Request) {
               limit: 8,
             });
 
-            let toolResult;
+             let toolResult;
             if (results.length === 0) {
               toolResult = { found: false, message: 'No relevant documents found for this query. Try a broader search.' };
             } else {
               toolResult = {
                 found: true,
                 resultCount: results.length,
-                results: results.map(r => ({
-                  title: r.document.title,
-                  type: r.document.metadata?.type,
-                  sku: r.document.metadata?.sku,
-                  price: r.document.metadata?.price,
-                  collection: r.document.metadata?.collection,
-                  finishes: r.document.metadata?.finishes,
-                  url: r.document.metadata?.url || r.document.sourceUrl,
-                  content: r.document.chunk.slice(0, 2500) // Give AI more context
-                }))
+                results: results.map(r => {
+                  const specs = parseSpecs(r.document.content);
+                  const images = r.document.metadata?.images || [];
+                  return {
+                    title: r.document.title,
+                    type: r.document.metadata?.type,
+                    sku: r.document.metadata?.sku || specs['Item Code'] || '',
+                    price: r.document.metadata?.price,
+                    collection: r.document.metadata?.collection,
+                    finishes: r.document.metadata?.finishes || (specs['Colour'] ? [specs['Colour']] : []),
+                    images: images,
+                    imageUrl: images[0] || '', // Pre-fill first image for AI
+                    specs: specs, // Pre-fill specs for AI
+                    url: r.document.metadata?.url || r.document.sourceUrl,
+                    content: r.document.chunk.slice(0, 2500) // Give AI more context
+                  };
+                })
               };
             }
 
