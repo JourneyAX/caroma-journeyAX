@@ -65,7 +65,11 @@ export async function vectorSearch(
     filter['metadata.type'] = options.type;
   }
   if (options.category) {
-    filter['metadata.category'] = options.category;
+    filter['$or'] = [
+      { 'metadata.category': options.category },
+      { 'metadata.category': { $exists: false } },
+      { 'metadata.category': null }
+    ];
   }
 
   const pipeline: object[] = [
@@ -117,7 +121,23 @@ export async function regexSearch(
     ];
   }
   if (options.type) filter['metadata.type'] = options.type;
-  if (options.category) filter['metadata.category'] = options.category;
+  
+  if (options.category) {
+    const categoryOr = [
+      { 'metadata.category': options.category },
+      { 'metadata.category': { $exists: false } },
+      { 'metadata.category': null }
+    ];
+    if (filter['$or']) {
+      filter['$and'] = [
+        { $or: filter['$or'] as any[] },
+        { $or: categoryOr }
+      ];
+      delete filter['$or'];
+    } else {
+      filter['$or'] = categoryOr;
+    }
+  }
 
   // Build regex from the important words in the query
   const words = query

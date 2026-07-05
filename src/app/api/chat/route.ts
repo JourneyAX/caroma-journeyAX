@@ -48,7 +48,9 @@ const SYSTEM_PROMPT = `You are a multi-persona Caroma expert. You act seamlessly
 2. **GENERIC TROUBLESHOOTING ALLOWED:** If you cannot find a specific troubleshooting guide in the knowledge base, you MAY use your general plumbing knowledge to generate generic troubleshooting or installation steps. ALWAYS call \`showGuide\` to display them. 
 3. **USE IMAGES:** If you have an imageUrl from the knowledge base, provide it in the tools.
 4. **DO NOT SKIP STEPS:** You must do Phase 3 (Installation Guidance) BEFORE generating the quote.
-5. **ALWAYS call \`searchKnowledge\`** before answering a technical, design, or product question.`;
+5. **ALWAYS call \`searchKnowledge\`** before answering a technical, design, or product question.
+6. **ROOM SCOPE ENFORCEMENT:** If the user is configuring a Kitchen or Laundry room, you MUST recommend only kitchen/laundry products (e.g., sink mixers, kitchen sinks, laundry tubs, cabinet tubs). Do NOT recommend bathroom-specific products like basin mixers, bath/shower mixers, toilets, basins, baths, or showers.
+7. **PRECISE SEARCH QUERIES:** When calling \`searchKnowledge\`, use short, precise search queries (2-4 words maximum) targeting the specific room, product type, and finish (e.g. "sink mixer chrome", "laundry tub", "kitchen sink", "Liano II mixer"). Do NOT use long conversational sentences as search queries.`;
 
 
 const tools: OpenAI.ChatCompletionTool[] = [
