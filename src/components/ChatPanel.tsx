@@ -43,7 +43,16 @@ export default function ChatPanel() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: apiMessages })
+        body: JSON.stringify({ 
+          messages: apiMessages,
+          state: {
+            phase: stateRef.current.phase,
+            bom: stateRef.current.customBom || [],
+            recommendedProducts: stateRef.current.recommendedProducts || [],
+            finish: stateRef.current.finish || '',
+            qty: stateRef.current.qty || 1
+          }
+        })
       });
 
       if (!res.ok) {

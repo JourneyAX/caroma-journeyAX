@@ -95,7 +95,10 @@ const SYSTEM_PROMPT = `You are a multi-persona Caroma expert. You act seamlessly
 6. **ROOM SCOPE ENFORCEMENT:** If the user is configuring a Kitchen or Laundry room, you MUST recommend only kitchen/laundry products (e.g., sink mixers, kitchen sinks, laundry tubs, cabinet tubs). Do NOT recommend bathroom-specific products like basin mixers, bath/shower mixers, toilets, basins, baths, or showers.
 7. **PRECISE SEARCH QUERIES:** When calling \`searchKnowledge\`, use short, precise search queries (2-4 words maximum) targeting the specific room, product type, and finish (e.g. "sink mixer chrome", "laundry tub", "kitchen sink", "Liano II mixer"). Do NOT use long conversational sentences as search queries.
 8. **ACCUMULATE QUOTES (BOM PERSISTENCE):** If the user transitions from one room to another (e.g. adding kitchen items to an existing bathroom quote), you MUST preserve the previous items in the quote. Retrieve the previous items from the chat history and include them alongside the new items in the next \`updateQuote\` call so nothing is deleted.
-9. **DEDUPLICATE SPECIFICATIONS:** Do NOT recommend or add the same base product in multiple different sizes or configurations (e.g. both a 220mm and 180mm wall mixer) at the same time. Choose the most common size first or ask the user to clarify before listing them.`;
+9. **DEDUPLICATE SPECIFICATIONS:** Do NOT recommend or add the same base product in multiple different sizes or configurations (e.g. both a 220mm and 180mm wall mixer) at the same time. Choose the most common size first or ask the user to clarify before listing them.
+10. **PREVENT REPEATING QUESTIONS & STEPS:** Do NOT repeat questions or ask to run steps that have already been completed (e.g. asking "Would you like me to generate the full bathroom spec?" if the BOM is already populated in the current system state, or asking "Do you need a plumber or DIY?" if they have already answered it). Check the current system state at the end of the prompt to see what has already been done, and move directly to the next logical step in the journey.
+11. **RECOMMEND SURROUNDING PRODUCTS & ACCESSORIES:** When recommending a primary product (like a basin or toilet), you MUST proactively search the knowledge base for matching accessories (e.g. toilet roll holders, wastes, soap holders) and installation parts (e.g. in-wall bodies). Do NOT just list the main product alone; include these surrounding products in your recommendation list.
+12. **WARRANTY & INSTALLATION SUMMARIES:** You must explicitly explain the warranty/guarantee periods (e.g., "20 year warranty on tapware") in your conversational response, but direct the user to the right-hand panel for the detailed installation steps (from the \`showGuide\` or \`updateQuote\` tools) rather than cluttering the chat with long lists of instructions.`;
 
 
 const tools: OpenAI.ChatCompletionTool[] = [
@@ -272,10 +275,26 @@ const tools: OpenAI.ChatCompletionTool[] = [
 ];
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages, state } = await req.json();
+
+  const stateContext = state ? `
+[CURRENT SYSTEM STATE (Do NOT repeat questions for items/phases already completed here)]
+- Active Phase: ${state.phase}
+- Selected Finish: ${state.finish}
+- Selected Quantity: ${state.qty}
+- Current BOM (Bill of Materials):
+${state.bom && state.bom.length > 0 
+  ? state.bom.map((item: any) => `  * ${item.name} (${item.sku || 'No SKU'}) - Price: $${item.price} - Category: ${item.category} - Quantity: ${item.quantity}`).join('\n')
+  : '  * (Empty)'}
+- Recommended Products currently showing on the right:
+${state.recommendedProducts && state.recommendedProducts.length > 0
+  ? state.recommendedProducts.map((item: any) => `  * ${item.name} (${item.sku || 'No SKU'})`).join('\n')
+  : '  * (None)'}
+` : '';
 
   const conversation: any[] = [
     { role: 'system', content: SYSTEM_PROMPT },
+    ...(stateContext ? [{ role: 'system', content: stateContext }] : []),
     ...messages
   ];
 
