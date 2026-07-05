@@ -91,6 +91,32 @@ Stores tenant profile configurations.
     "taxRate": 0.10,
     "discountRate": 0.12
   },
+  "llmConfiguration": {
+    "providers": [
+      {
+        "id": "openai_prod",
+        "name": "Production OpenAI",
+        "provider": "openai",
+        "apiKeyRef": "vault/openai/caroma",
+        "model": "gpt-4o-mini",
+        "temperature": 0.2
+      }
+    ],
+    "routingRules": [
+      { "target": "chat", "providerId": "openai_prod", "model": "gpt-4o-mini" },
+      { "target": "bom_generation", "providerId": "openai_prod", "model": "gpt-4o" }
+    ]
+  },
+  "agenticCommerceSettings": {
+    "enabled": true,
+    "provider": "commercetools",
+    "commercetoolsSettings": {
+      "projectKey": "caroma-poc-ctp",
+      "clientId": "client_id_ref",
+      "clientSecretRef": "vault/ctp/caroma/secret",
+      "apiUrl": "https://api.australia-southeast1.gcp.commercetools.com"
+    }
+  },
   "createdAt": { "$date": "2026-07-05T12:00:00Z" }
 }
 ```

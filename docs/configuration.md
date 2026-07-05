@@ -90,6 +90,33 @@ persona:
     - "showProducts"
     - "showGuide"
     - "updateQuote"
+
+# ── 5. LLM PROVIDERS & DYNAMIC ROUTING ──────────────
+llmConfiguration:
+  providers:
+    - id: "openai_prod"
+      name: "Production OpenAI"
+      provider: "openai"
+      apiKeyRef: "vault/openai/caroma"
+      model: "gpt-4o-mini"
+      temperature: 0.2
+  routingRules:
+    - target: "chat"
+      providerId: "openai_prod"
+      model: "gpt-4o-mini"
+    - target: "bom_generation"
+      providerId: "openai_prod"
+      model: "gpt-4o"
+
+# ── 6. AGENTIC CHECKOUT & INTEGRATIONS ──────────────
+agenticCommerceSettings:
+  enabled: true
+  provider: "commercetools"
+  commercetoolsSettings:
+    projectKey: "caroma-poc-ctp"
+    clientId: "client_id_ref"
+    clientSecretRef: "vault/ctp/caroma/secret"
+    apiUrl: "https://api.australia-southeast1.gcp.commercetools.com"
 ```
 
 ---
