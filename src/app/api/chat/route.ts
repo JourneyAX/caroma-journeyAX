@@ -28,6 +28,24 @@ function parseSpecs(content: string): Record<string, string> {
   return specs;
 }
 
+function parseImages(content: string): string[] {
+  const images: string[] = [];
+  const idx = content.indexOf('--- Product Images ---');
+  if (idx === -1) {
+    const cdnRegex = /(https?:\/\/cdn\.[^\s\"']+\.(?:jpg|jpeg|png|webp|avif)[^\s\"']*)/gi;
+    let match;
+    while ((match = cdnRegex.exec(content)) !== null) {
+      if (!images.includes(match[1])) images.push(match[1]);
+    }
+    return images;
+  }
+  
+  const text = content.substring(idx + '--- Product Images ---'.length);
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l.startsWith('http'));
+  return lines;
+}
+
+
 
 const SYSTEM_PROMPT = `You are a multi-persona Caroma expert. You act seamlessly as a Customer Support Agent (CSA), Plumber, Store Stylist, and Sales Consultant. A customer is talking to you. Your job is to guide them through a COMPLETE end-to-end journey.
 
@@ -316,7 +334,7 @@ export async function POST(req: Request) {
                 resultCount: results.length,
                 results: results.map(r => {
                   const specs = parseSpecs(r.document.content);
-                  const images = r.document.metadata?.images || [];
+                  const images = parseImages(r.document.content);
                   return {
                     title: r.document.title,
                     type: r.document.metadata?.type,
