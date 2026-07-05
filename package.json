@@ -1,30 +1,19 @@
 {
-  "name": "journeyx-app",
+  "name": "journeyx-monorepo",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "start": "turbo run start",
+    "lint": "turbo run lint"
   },
-  "dependencies": {
-    "@mendable/firecrawl-js": "^4.29.0",
-    "dotenv": "^17.4.2",
-    "mongodb": "^7.4.0",
-    "next": "16.2.9",
-    "openai": "^6.45.0",
-    "react": "19.2.4",
-    "react-dom": "19.2.4"
-  },
+  "packageManager": "npm@10.9.2",
   "devDependencies": {
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.9",
-    "playwright": "^1.61.1",
-    "tsx": "^4.22.4",
-    "typescript": "^5"
+    "turbo": "^2.0.0"
   }
 }

@@ -1,0 +1,63 @@
+/* Import fonts from CDN */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Space+Grotesk:wght@300..700&display=swap');
+
+/* JourneyAX Brand Foundations */
+:root {
+  /* Colors */
+  --brand-yellow: #FFD600;
+  --brand-yellow-hover: #E6C000;
+  --brand-black: #0A0A0A;
+  --brand-black-raised: #111111;
+  --brand-white: #FFFFFF;
+  
+  /* Grays */
+  --gray-100: #F5F5F5;
+  --gray-200: #E8E8E8;
+  --gray-300: #CCCCCC;
+  --gray-500: #999999;
+  
+  /* Status Colors */
+  --success: #1F8A4C;
+  --destructive: #D92D20;
+
+  /* Typography Defaults */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+
+/* Base Styles */
+body {
+  font-family: var(--font-body);
+  background-color: var(--brand-white);
+  color: var(--brand-black);
+  line-height: 1.65;
+}
+
+/* Sharp Corners Rule: Buttons, Cards, Inputs */
+.ja-button,
+.ja-card,
+.ja-input,
+.ja-badge,
+.ja-tag {
+  border-radius: 0 !important;
+  border: 1px solid var(--gray-200);
+}
+
+/* AI Agent Conversational Rounded Surfaces */
+.ja-chat-bubble {
+  border-radius: 16px;
+}
+.ja-chat-bubble-sender {
+  border-top-right-radius: 0; /* Asymmetric flat corner */
+}
+.ja-chat-bubble-receiver {
+  border-top-left-radius: 0;
+}
+
+.ja-plan-card {
+  border-radius: 12px;
+}
+
+.ja-chat-shell {
+  border-radius: 16px;
+}
